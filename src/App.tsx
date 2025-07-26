@@ -1,0 +1,65 @@
+import React, { useState, useEffect } from 'react';
+import Navigation from './components/Layout/Navigation';
+import MiningPanel from './components/Panels/MiningPanel';
+import PowerPanel from './components/Panels/PowerPanel';
+import MarketPanel from './components/Panels/MarketPanel';
+import CoinLabPanel from './components/Panels/CoinLabPanel';
+import DarkWebPanel from './components/Panels/DarkWebPanel';
+import HackerPanel from './components/Panels/HackerPanel';
+import GameLoop from './components/GameLoop';
+
+function App() {
+  const [activePanel, setActivePanel] = useState('mining');
+
+  useEffect(() => {
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('SW registration failed: ', registrationError);
+        });
+    }
+  }, []);
+
+  const renderActivePanel = () => {
+    switch (activePanel) {
+      case 'mining':
+        return <MiningPanel />;
+      case 'power':
+        return <PowerPanel />;
+      case 'market':
+        return <MarketPanel />;
+      case 'coinlab':
+        return <CoinLabPanel />;
+      case 'darkweb':
+        return <DarkWebPanel />;
+      case 'hacker':
+        return <HackerPanel />;
+      default:
+        return <MiningPanel />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white">
+      <GameLoop />
+      <Navigation activePanel={activePanel} setActivePanel={setActivePanel} />
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {renderActivePanel()}
+      </main>
+      
+      {/* Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-128 h-128 bg-green-500/3 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }} />
+      </div>
+    </div>
+  );
+}
+
+export default App;

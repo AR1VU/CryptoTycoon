@@ -5,23 +5,22 @@ export const createMarketSlice: StateCreator<
   GameState & GameActions,
   [],
   [],
-  Pick<GameState, 'marketPrice' | 'usdBalance' | 'marketHistory' | 'portfolioValue' | 'transactionHistory'> & Pick<GameActions, 'buyBitBux' | 'sellBitBux' | 'updateMarketPrice'>
+  Pick<GameState, 'marketPrice' | 'marketHistory' | 'portfolioValue' | 'transactionHistory'> & Pick<GameActions, 'buyBitBux' | 'sellBitBux' | 'updateMarketPrice'>
 > = (set, get) => ({
   marketPrice: 50000,
-  usdBalance: 1000,
   marketHistory: [50000],
   portfolioValue: 0,
   transactionHistory: [],
   
-  buyBitBux: (usdAmount) => {
+  buyBitBux: (dollarAmount) => {
     const state = get();
-    if (state.usdBalance >= usdAmount) {
-      const bitbuxAmount = usdAmount / state.marketPrice;
-      const fee = usdAmount * 0.01; // 1% transaction fee
+    if (state.dollars >= dollarAmount) {
+      const bitbuxAmount = dollarAmount / state.marketPrice;
+      const fee = dollarAmount * 0.01; // 1% transaction fee
       
       set((state) => ({
-        usdBalance: state.usdBalance - usdAmount - fee,
-        coins: state.coins + bitbuxAmount,
+        dollars: state.dollars - dollarAmount - fee,
+        bitbux: state.bitbux + bitbuxAmount,
         transactionHistory: [...state.transactionHistory, {
           type: 'buy',
           amount: bitbuxAmount,
@@ -34,13 +33,13 @@ export const createMarketSlice: StateCreator<
   
   sellBitBux: (bitbuxAmount) => {
     const state = get();
-    if (state.coins >= bitbuxAmount) {
-      const usdAmount = bitbuxAmount * state.marketPrice;
-      const fee = usdAmount * 0.01; // 1% transaction fee
+    if (state.bitbux >= bitbuxAmount) {
+      const dollarAmount = bitbuxAmount * state.marketPrice;
+      const fee = dollarAmount * 0.01; // 1% transaction fee
       
       set((state) => ({
-        coins: state.coins - bitbuxAmount,
-        usdBalance: state.usdBalance + usdAmount - fee,
+        bitbux: state.bitbux - bitbuxAmount,
+        dollars: state.dollars + dollarAmount - fee,
         transactionHistory: [...state.transactionHistory, {
           type: 'sell',
           amount: bitbuxAmount,
@@ -60,7 +59,7 @@ export const createMarketSlice: StateCreator<
       return {
         marketPrice: newPrice,
         marketHistory: [...state.marketHistory.slice(-99), newPrice],
-        portfolioValue: state.coins * newPrice + state.usdBalance
+        portfolioValue: state.bitbux * newPrice + state.dollars
       };
     });
   }

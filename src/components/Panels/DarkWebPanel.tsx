@@ -3,10 +3,30 @@ import { Shield, AlertTriangle, ShoppingCart, Eye } from 'lucide-react';
 import { useGameStore } from '../../store';
 
 const DarkWebPanel: React.FC = () => {
-  const { coins, riskMeter, reputation } = useGameStore();
+  const { 
+    dollars, 
+    riskMeter, 
+    reputation, 
+    blackMarketItems, 
+    ownedBlackMarketItems,
+    isUnderground,
+    undergroundEndTime,
+    buyBlackMarketItem,
+    payBribe,
+    goUnderground
+  } = useGameStore();
 
-  const formatNumber = (num: number) => {
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+  const formatNumber = (num: number): string => {
+    if (num >= 1e33) return `${(num / 1e33).toFixed(2)} Decillion`;
+    if (num >= 1e30) return `${(num / 1e30).toFixed(2)} Nonillion`;
+    if (num >= 1e27) return `${(num / 1e27).toFixed(2)} Octillion`;
+    if (num >= 1e24) return `${(num / 1e24).toFixed(2)} Septillion`;
+    if (num >= 1e21) return `${(num / 1e21).toFixed(2)} Sextillion`;
+    if (num >= 1e18) return `${(num / 1e18).toFixed(2)} Quintillion`;
+    if (num >= 1e15) return `${(num / 1e15).toFixed(2)} Quadrillion`;
+    if (num >= 1e12) return `${(num / 1e12).toFixed(2)} Trillion`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)} Billion`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)} Million`;
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
     return num.toFixed(2);
   };
@@ -17,51 +37,18 @@ const DarkWebPanel: React.FC = () => {
     return 'text-green-400';
   };
 
-  const blackMarketItems = [
-    {
-      id: 'stealth-rig',
-      name: 'Stealth Mining Rig',
-      description: 'Untraceable mining hardware that bypasses power grid detection',
-      price: 5000,
-      riskIncrease: 10,
-      effect: '+50% mining speed, -25% power consumption',
-      available: true
-    },
-    {
-      id: 'power-theft',
-      name: 'Power Grid Hack',
-      description: 'Illegally tap into the power grid for free electricity',
-      price: 10000,
-      riskIncrease: 25,
-      effect: 'Free power for 24 hours',
-      available: reputation > 50
-    },
-    {
-      id: 'insider-info',
-      name: 'Exchange Insider Info',
-      description: 'Get advance notice of market-moving news',
-      price: 25000,
-      riskIncrease: 15,
-      effect: 'Predict next 3 market movements',
-      available: reputation > 100
-    },
-    {
-      id: 'fake-audit',
-      name: 'Fake Security Audit',
-      description: 'Fraudulent security certificate for your custom coin',
-      price: 15000,
-      riskIncrease: 20,
-      effect: '+30% coin adoption rate',
-      available: reputation > 75
-    }
-  ];
-
   const surveillanceEvents = [
     'Government monitoring increased',
     'Exchange compliance check detected',
     'Suspicious transaction flagged',
     'Law enforcement inquiry pending'
   ];
+
+  const formatTime = (ms: number) => {
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    return `${hours}h ${minutes}m`;
+  };
 
   return (
     <div className="space-y-6">
@@ -117,10 +104,25 @@ const DarkWebPanel: React.FC = () => {
           <div className="bg-gray-800 rounded-lg p-4">
             <div className="text-gray-400 text-sm">Available Funds</div>
             <div className="text-2xl font-bold text-yellow-400">
-              {formatNumber(coins)} BB
+              ${formatNumber(dollars)}
             </div>
           </div>
         </div>
+        
+        {isUnderground && (
+          <div className="mt-4 bg-blue-900/20 border border-blue-500 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="text-blue-400 text-lg mr-3">🕳️</div>
+              <div>
+                <div className="text-blue-400 font-semibold">Underground Status Active</div>
+                <div className="text-gray-300 text-sm">
+                  Hiding from authorities. All income reduced by 75%. 
+                  Time remaining: {formatTime(undergroundEndTime - Date.now())}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Black Market */}
@@ -131,55 +133,69 @@ const DarkWebPanel: React.FC = () => {
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {blackMarketItems.map((item) => (
-            <div key={item.id} className={`bg-gray-700 rounded-lg p-4 border ${
-              item.available ? 'border-gray-600' : 'border-gray-800'
-            }`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h4 className={`font-semibold ${
-                    item.available ? 'text-white' : 'text-gray-500'
-                  }`}>
-                    {item.name}
-                  </h4>
-                  <p className={`text-sm mt-1 ${
-                    item.available ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    {item.description}
-                  </p>
+          {blackMarketItems.map((item) => {
+            const isOwned = ownedBlackMarketItems.includes(item.id);
+            const canAfford = dollars >= item.price;
+            const hasReputation = reputation >= item.requiredReputation;
+            const available = !isOwned && canAfford && hasReputation;
+            
+            return (
+              <div key={item.id} className={`bg-gray-700 rounded-lg p-4 border ${
+                available ? 'border-gray-600' : isOwned ? 'border-green-600' : 'border-gray-800'
+              }`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h4 className={`font-semibold ${
+                      isOwned ? 'text-green-400' : available ? 'text-white' : 'text-gray-500'
+                    }`}>
+                      {item.name}
+                      {isOwned && <span className="ml-2 text-xs bg-green-600 px-2 py-1 rounded">OWNED</span>}
+                    </h4>
+                    <p className={`text-sm mt-1 ${
+                      available ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {item.description}
+                    </p>
+                  </div>
+                  <div className="text-red-400 text-lg">
+                    ⚠️
+                  </div>
                 </div>
-                <div className="text-red-400 text-lg">
-                  ⚠️
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Price:</span>
+                    <span className="text-yellow-400">${formatNumber(item.price)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Risk:</span>
+                    <span className="text-red-400">+{item.riskIncrease}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Required Rep:</span>
+                    <span className="text-purple-400">{item.requiredReputation}</span>
+                  </div>
+                  <div className="text-green-400 text-xs mt-2">
+                    Effect: {item.effect}
+                  </div>
                 </div>
+                
+                <button
+                  onClick={() => buyBlackMarketItem(item.id)}
+                  disabled={!available || isOwned}
+                  className={`w-full mt-4 py-2 px-4 rounded-lg font-medium transition-colors ${
+                    available && !isOwned
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {isOwned ? 'Already Owned' :
+                   !hasReputation ? `Requires ${item.requiredReputation} Reputation` : 
+                   !canAfford ? 'Insufficient Funds' : 'Purchase'}
+                </button>
               </div>
-              
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Price:</span>
-                  <span className="text-yellow-400">{formatNumber(item.price)} BB</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Risk:</span>
-                  <span className="text-red-400">+{item.riskIncrease}%</span>
-                </div>
-                <div className="text-green-400 text-xs mt-2">
-                  Effect: {item.effect}
-                </div>
-              </div>
-              
-              <button
-                disabled={!item.available || coins < item.price}
-                className={`w-full mt-4 py-2 px-4 rounded-lg font-medium transition-colors ${
-                  item.available && coins >= item.price
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                {!item.available ? `Requires ${item.name.includes('Power') ? '50' : '75'} Reputation` : 
-                 coins < item.price ? 'Insufficient Funds' : 'Purchase'}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -229,11 +245,12 @@ const DarkWebPanel: React.FC = () => {
             <div className="text-sm mb-3">
               <span className="text-gray-400">Cost: </span>
               <span className="text-yellow-400">
-                {formatNumber(riskMeter * 1000)} BB
+                ${formatNumber(riskMeter * 1000)}
               </span>
             </div>
             <button
-              disabled={coins < riskMeter * 1000 || riskMeter < 10}
+              onClick={payBribe}
+              disabled={dollars < riskMeter * 1000 || riskMeter < 10}
               className="w-full bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
             >
               {riskMeter < 10 ? 'Risk Too Low' : 'Pay Bribe'}
@@ -250,10 +267,11 @@ const DarkWebPanel: React.FC = () => {
               <span className="text-blue-400">24 hours</span>
             </div>
             <button
-              disabled={riskMeter < 50}
+              onClick={goUnderground}
+              disabled={riskMeter < 50 || isUnderground}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
             >
-              {riskMeter < 50 ? 'Risk Too Low' : 'Go Underground'}
+              {isUnderground ? 'Already Underground' : riskMeter < 50 ? 'Risk Too Low' : 'Go Underground'}
             </button>
           </div>
         </div>

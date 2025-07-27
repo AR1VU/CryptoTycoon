@@ -4,7 +4,9 @@ import { useGameStore } from '../../store';
 
 const MiningPanel: React.FC = () => {
   const { 
-    coins,
+    dollars,
+    bitbux,
+    marketPrice,
     miners,
     miningPools,
     clickPower,
@@ -12,10 +14,12 @@ const MiningPanel: React.FC = () => {
     buyMiner,
     upgradeMiner,
     repairMiner,
-    assignMinerToPool
+    assignMinerToPool,
+    convertBitBuxToDollars
   } = useGameStore();
   
   const [selectedMiner, setSelectedMiner] = useState<string | null>(null);
+  const [convertAmount, setConvertAmount] = useState<string>('');
 
   const minerTypes = [
     { type: 'cpu' as const, name: 'CPU Miner', baseCost: 10, icon: '🖥️' },
@@ -27,11 +31,21 @@ const MiningPanel: React.FC = () => {
   const getMinerCost = (type: string, count: number) => {
     const baseConfig = minerTypes.find(m => m.type === type);
     if (!baseConfig) return 0;
-    return baseConfig.baseCost * Math.pow(1.5, count);
+    const costInBitBux = baseConfig.baseCost * Math.pow(1.5, count);
+    return costInBitBux * marketPrice; // Convert to dollars
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+  const formatNumber = (num: number): string => {
+    if (num >= 1e33) return `${(num / 1e33).toFixed(2)} Decillion`;
+    if (num >= 1e30) return `${(num / 1e30).toFixed(2)} Nonillion`;
+    if (num >= 1e27) return `${(num / 1e27).toFixed(2)} Octillion`;
+    if (num >= 1e24) return `${(num / 1e24).toFixed(2)} Septillion`;
+    if (num >= 1e21) return `${(num / 1e21).toFixed(2)} Sextillion`;
+    if (num >= 1e18) return `${(num / 1e18).toFixed(2)} Quintillion`;
+    if (num >= 1e15) return `${(num / 1e15).toFixed(2)} Quadrillion`;
+    if (num >= 1e12) return `${(num / 1e12).toFixed(2)} Trillion`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)} Billion`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)} Million`;
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
     return num.toFixed(2);
   };
@@ -42,6 +56,14 @@ const MiningPanel: React.FC = () => {
       case 'overheating': return 'text-yellow-400';
       case 'broken': return 'text-red-400';
       default: return 'text-gray-400';
+    }
+  };
+
+  const handleConvert = () => {
+    const amount = parseFloat(convertAmount);
+    if (!isNaN(amount) && amount > 0 && amount <= bitbux) {
+      convertBitBuxToDollars(amount);
+      setConvertAmount('');
     }
   };
 
@@ -64,21 +86,50 @@ const MiningPanel: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gray-700 rounded-lg p-4">
+            <div className="text-gray-400 text-sm">BitBux Balance</div>
+            <div className="text-2xl font-bold text-yellow-400">{formatNumber(bitbux)} BB</div>
+          </div>
+          <div className="bg-gray-700 rounded-lg p-4">
+            <div className="text-gray-400 text-sm">Dollar Balance</div>
+            <div className="text-2xl font-bold text-green-400">${formatNumber(dollars)}</div>
+          </div>
+          <div className="bg-gray-700 rounded-lg p-4">
             <div className="text-gray-400 text-sm">Total Miners</div>
             <div className="text-2xl font-bold text-white">{miners.length}</div>
           </div>
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="text-gray-400 text-sm">Operational</div>
-            <div className="text-2xl font-bold text-green-400">
-              {miners.filter(m => m.status === 'operational').length}
-            </div>
+        </div>
+        
+        {/* BitBux to Dollar Converter */}
+        <div className="mt-4 bg-gray-700 rounded-lg p-4">
+          <h4 className="text-white font-semibold mb-3">Convert BitBux to Dollars</h4>
+          <div className="flex space-x-3">
+            <input
+              type="number"
+              value={convertAmount}
+              onChange={(e) => setConvertAmount(e.target.value)}
+              placeholder="Amount in BitBux"
+              className="flex-1 bg-gray-600 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              max={bitbux}
+            />
+            <button
+              onClick={() => setConvertAmount(bitbux.toString())}
+              className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded text-sm"
+            >
+              Max
+            </button>
+            <button
+              onClick={handleConvert}
+              disabled={!convertAmount || parseFloat(convertAmount) <= 0 || parseFloat(convertAmount) > bitbux}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors disabled:cursor-not-allowed"
+            >
+              Convert
+            </button>
           </div>
-          <div className="bg-gray-700 rounded-lg p-4">
-            <div className="text-gray-400 text-sm">Total Hash Rate</div>
-            <div className="text-2xl font-bold text-purple-400">
-              {formatNumber(miners.reduce((sum, m) => m.status === 'operational' ? sum + m.speed : sum, 0))} TH/s
+          {convertAmount && parseFloat(convertAmount) > 0 && (
+            <div className="text-sm text-gray-400 mt-2">
+              Will receive: ${formatNumber(parseFloat(convertAmount) * marketPrice * 0.99)} (1% fee)
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -89,7 +140,7 @@ const MiningPanel: React.FC = () => {
           {minerTypes.map((minerType) => {
             const count = miners.filter(m => m.type === minerType.type).length;
             const cost = getMinerCost(minerType.type, count);
-            const canAfford = coins >= cost;
+            const canAfford = dollars >= cost;
             
             return (
               <div key={minerType.type} className="bg-gray-700 rounded-lg p-4">
@@ -107,7 +158,7 @@ const MiningPanel: React.FC = () => {
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  Buy - {formatNumber(cost)} BB
+                  Buy - ${formatNumber(cost)}
                 </button>
               </div>
             );
@@ -219,9 +270,9 @@ const MiningPanel: React.FC = () => {
                     
                     <button
                       onClick={() => upgradeMiner(miner.id)}
-                      disabled={coins < miner.level * 50}
+                      disabled={dollars < miner.level * 50}
                       className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                      title={`Upgrade (${miner.level * 50} BB)`}
+                      title={`Upgrade ($${miner.level * 50})`}
                     >
                       <TrendingUp size={14} />
                     </button>
@@ -229,9 +280,9 @@ const MiningPanel: React.FC = () => {
                     {miner.status === 'broken' && (
                       <button
                         onClick={() => repairMiner(miner.id)}
-                        disabled={coins < miner.level * 25}
+                        disabled={dollars < miner.level * 25}
                         className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                        title={`Repair (${miner.level * 25} BB)`}
+                        title={`Repair ($${miner.level * 25})`}
                       >
                         <Wrench size={14} />
                       </button>

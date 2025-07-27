@@ -4,9 +4,9 @@ import { useGameStore } from '../../store';
 
 const MarketPanel: React.FC = () => {
   const {
-    coins,
+    bitbux,
+    dollars,
     marketPrice,
-    usdBalance,
     marketHistory,
     portfolioValue,
     transactionHistory,
@@ -17,8 +17,17 @@ const MarketPanel: React.FC = () => {
   const [tradeAmount, setTradeAmount] = useState<string>('100');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
 
-  const formatNumber = (num: number) => {
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+  const formatNumber = (num: number): string => {
+    if (num >= 1e33) return `${(num / 1e33).toFixed(2)} Decillion`;
+    if (num >= 1e30) return `${(num / 1e30).toFixed(2)} Nonillion`;
+    if (num >= 1e27) return `${(num / 1e27).toFixed(2)} Octillion`;
+    if (num >= 1e24) return `${(num / 1e24).toFixed(2)} Septillion`;
+    if (num >= 1e21) return `${(num / 1e21).toFixed(2)} Sextillion`;
+    if (num >= 1e18) return `${(num / 1e18).toFixed(2)} Quintillion`;
+    if (num >= 1e15) return `${(num / 1e15).toFixed(2)} Quadrillion`;
+    if (num >= 1e12) return `${(num / 1e12).toFixed(2)} Trillion`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)} Billion`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)} Million`;
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
     return num.toFixed(2);
   };
@@ -45,9 +54,9 @@ const MarketPanel: React.FC = () => {
 
   const getMaxTradeAmount = () => {
     if (tradeType === 'buy') {
-      return Math.floor(usdBalance * 0.99); // Account for fees
+      return Math.floor(dollars * 0.99); // Account for fees
     } else {
-      return coins;
+      return bitbux;
     }
   };
 
@@ -82,17 +91,17 @@ const MarketPanel: React.FC = () => {
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="text-gray-400 text-sm">BitBux Balance</div>
             <div className="text-2xl font-bold text-yellow-400">
-              {formatNumber(coins)} BB
+              {formatNumber(bitbux)} BB
             </div>
             <div className="text-sm text-gray-400">
-              ≈ {formatCurrency(coins * marketPrice)}
+              ≈ {formatCurrency(bitbux * marketPrice)}
             </div>
           </div>
           
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="text-gray-400 text-sm">USD Balance</div>
             <div className="text-2xl font-bold text-green-400">
-              {formatCurrency(usdBalance)}
+              {formatCurrency(dollars)}
             </div>
           </div>
           
@@ -207,7 +216,7 @@ const MarketPanel: React.FC = () => {
                 </button>
               </div>
               <div className="text-sm text-gray-400 mt-1">
-                Max: {formatNumber(getMaxTradeAmount())} {tradeType === 'buy' ? 'USD' : 'BB'}
+                Max: {formatNumber(getMaxTradeAmount())} {tradeType === 'buy' ? 'USD' : 'BitBux'}
               </div>
             </div>
             

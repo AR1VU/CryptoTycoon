@@ -20,16 +20,17 @@ export const createMiningSlice: StateCreator<
   
   clickMine: () => {
     set((state) => ({
-      coins: state.coins + state.clickPower
+      bitbux: state.bitbux + state.clickPower
     }));
   },
   
   buyMiner: (type) => {
     const state = get();
     const config = MINER_CONFIGS[type];
-    const cost = config.baseCost * Math.pow(1.5, state.miners.filter(m => m.type === type).length);
+    const costInBitBux = config.baseCost * Math.pow(1.5, state.miners.filter(m => m.type === type).length);
+    const costInDollars = costInBitBux * state.marketPrice;
     
-    if (state.coins >= cost) {
+    if (state.dollars >= costInDollars) {
       const newMiner: Miner = {
         id: `${type}-${Date.now()}`,
         type,
@@ -45,7 +46,7 @@ export const createMiningSlice: StateCreator<
       };
       
       set((state) => ({
-        coins: state.coins - cost,
+        dollars: state.dollars - costInDollars,
         miners: [...state.miners, newMiner],
         powerUsed: state.powerUsed + config.baseSpeed * 0.1
       }));
@@ -57,10 +58,10 @@ export const createMiningSlice: StateCreator<
     const miner = state.miners.find(m => m.id === id);
     if (!miner) return;
     
-    const upgradeCost = miner.level * 50;
-    if (state.coins >= upgradeCost) {
+    const upgradeCostDollars = miner.level * 50;
+    if (state.dollars >= upgradeCostDollars) {
       set((state) => ({
-        coins: state.coins - upgradeCost,
+        dollars: state.dollars - upgradeCostDollars,
         miners: state.miners.map(m => 
           m.id === id ? {
             ...m,
@@ -78,10 +79,10 @@ export const createMiningSlice: StateCreator<
     const miner = state.miners.find(m => m.id === id);
     if (!miner || miner.status !== 'broken') return;
     
-    const repairCost = miner.level * 25;
-    if (state.coins >= repairCost) {
+    const repairCostDollars = miner.level * 25;
+    if (state.dollars >= repairCostDollars) {
       set((state) => ({
-        coins: state.coins - repairCost,
+        dollars: state.dollars - repairCostDollars,
         miners: state.miners.map(m => 
           m.id === id ? {
             ...m,

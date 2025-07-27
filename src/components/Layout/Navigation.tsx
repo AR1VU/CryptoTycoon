@@ -17,7 +17,22 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ activePanel, setActivePanel }) => {
-  const { coins, marketPrice, powerUsed, powerCapacity, riskMeter, saveGame } = useGameStore();
+  const { bitbux, dollars, marketPrice, powerUsed, powerCapacity, riskMeter, saveGame } = useGameStore();
+  
+  const formatNumber = (num: number): string => {
+    if (num >= 1e33) return `${(num / 1e33).toFixed(2)} Decillion`;
+    if (num >= 1e30) return `${(num / 1e30).toFixed(2)} Nonillion`;
+    if (num >= 1e27) return `${(num / 1e27).toFixed(2)} Octillion`;
+    if (num >= 1e24) return `${(num / 1e24).toFixed(2)} Septillion`;
+    if (num >= 1e21) return `${(num / 1e21).toFixed(2)} Sextillion`;
+    if (num >= 1e18) return `${(num / 1e18).toFixed(2)} Quintillion`;
+    if (num >= 1e15) return `${(num / 1e15).toFixed(2)} Quadrillion`;
+    if (num >= 1e12) return `${(num / 1e12).toFixed(2)} Trillion`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)} Billion`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)} Million`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
+    return num.toFixed(2);
+  };
 
   const navigationItems = [
     { id: 'mining', label: 'Mining', icon: Pickaxe, color: 'bg-yellow-600' },
@@ -27,12 +42,6 @@ const Navigation: React.FC<NavigationProps> = ({ activePanel, setActivePanel }) 
     { id: 'darkweb', label: 'Dark Web', icon: Shield, color: 'bg-red-600' },
     { id: 'hacker', label: 'Hacker', icon: Terminal, color: 'bg-gray-600' },
   ];
-
-  const formatNumber = (num: number) => {
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
-    if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
-    return num.toFixed(2);
-  };
 
   return (
     <nav className="bg-gray-900 border-b border-gray-700">
@@ -70,13 +79,16 @@ const Navigation: React.FC<NavigationProps> = ({ activePanel, setActivePanel }) 
 
           {/* Status Bar */}
           <div className="flex items-center space-x-6 text-sm">
-            <div className="text-yellow-400 font-medium">
-              💰 {formatNumber(coins)} BB
-            </div>
             <div className="text-green-400 font-medium">
+              💵 ${formatNumber(dollars)}
+            </div>
+            <div className="text-yellow-400 font-medium">
+              💰 {formatNumber(bitbux)} BB
+            </div>
+            <div className="text-blue-400 font-medium">
               📈 ${formatNumber(marketPrice)}
             </div>
-            <div className={`font-medium ${powerUsed > powerCapacity ? 'text-red-400' : 'text-blue-400'}`}>
+            <div className={`font-medium ${powerUsed > powerCapacity ? 'text-red-400' : 'text-cyan-400'}`}>
               ⚡ {formatNumber(powerUsed)}/{formatNumber(powerCapacity)}
             </div>
             <div className={`font-medium ${riskMeter > 70 ? 'text-red-400' : riskMeter > 40 ? 'text-yellow-400' : 'text-green-400'}`}>

@@ -9,7 +9,7 @@ const PowerPanel: React.FC = () => {
     powerPlants,
     gridEfficiency,
     pollution,
-    coins,
+    dollars,
     buyPowerPlant,
     upgradePowerPlant,
     repairPowerPlant
@@ -52,8 +52,17 @@ const PowerPanel: React.FC = () => {
     return baseConfig.baseCost * Math.pow(1.3, count);
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+  const formatNumber = (num: number): string => {
+    if (num >= 1e33) return `${(num / 1e33).toFixed(2)} Decillion`;
+    if (num >= 1e30) return `${(num / 1e30).toFixed(2)} Nonillion`;
+    if (num >= 1e27) return `${(num / 1e27).toFixed(2)} Octillion`;
+    if (num >= 1e24) return `${(num / 1e24).toFixed(2)} Septillion`;
+    if (num >= 1e21) return `${(num / 1e21).toFixed(2)} Sextillion`;
+    if (num >= 1e18) return `${(num / 1e18).toFixed(2)} Quintillion`;
+    if (num >= 1e15) return `${(num / 1e15).toFixed(2)} Quadrillion`;
+    if (num >= 1e12) return `${(num / 1e12).toFixed(2)} Trillion`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)} Billion`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)} Million`;
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
     return num.toFixed(2);
   };
@@ -152,7 +161,7 @@ const PowerPanel: React.FC = () => {
           {powerPlantTypes.map((plantType) => {
             const count = powerPlants.filter(p => p.type === plantType.type).length;
             const cost = getPowerPlantCost(plantType.type, count);
-            const canAfford = coins >= cost;
+            const canAfford = dollars >= cost;
             
             return (
               <div key={plantType.type} className="bg-gray-700 rounded-lg p-4">
@@ -171,7 +180,7 @@ const PowerPanel: React.FC = () => {
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  Build - {formatNumber(cost)} BB
+                  Build - ${formatNumber(cost)}
                 </button>
               </div>
             );
@@ -202,7 +211,7 @@ const PowerPanel: React.FC = () => {
                       <div className="text-sm text-gray-400">
                         Capacity: {formatNumber(plant.capacity)} MW | 
                         Efficiency: {(plant.efficiency * 100).toFixed(1)}% | 
-                        Upkeep: {formatNumber(plant.upkeep)} BB/tick
+                        Upkeep: ${formatNumber(plant.upkeep)}/tick
                       </div>
                       <div className="text-sm">
                         <span className="text-gray-400">Status: </span>
@@ -222,9 +231,9 @@ const PowerPanel: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => upgradePowerPlant(plant.id)}
-                      disabled={coins < plant.level * 100}
+                      disabled={dollars < plant.level * 100}
                       className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                      title={`Upgrade (${plant.level * 100} BB)`}
+                      title={`Upgrade ($${plant.level * 100})`}
                     >
                       <TrendingUp size={14} />
                     </button>
@@ -232,9 +241,9 @@ const PowerPanel: React.FC = () => {
                     {plant.status === 'malfunction' && (
                       <button
                         onClick={() => repairPowerPlant(plant.id)}
-                        disabled={coins < plant.level * 75}
+                        disabled={dollars < plant.level * 75}
                         className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                        title={`Repair (${plant.level * 75} BB)`}
+                        title={`Repair ($${plant.level * 75})`}
                       >
                         <Wrench size={14} />
                       </button>

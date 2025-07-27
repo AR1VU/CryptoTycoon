@@ -4,12 +4,16 @@ import { useGameStore } from '../../store';
 
 const CoinLabPanel: React.FC = () => {
   const {
-    coins,
+    dollars,
+    bitbux,
     coinLaunched,
     customCoin,
+    rugPullExecuted,
     launchCoin,
     marketCoin,
-    upgradeCoinTech
+    upgradeCoinTech,
+    rugPullCoin,
+    pumpAndDumpCoin
   } = useGameStore();
 
   const [coinForm, setCoinForm] = useState({
@@ -20,14 +24,23 @@ const CoinLabPanel: React.FC = () => {
     popularity: 10
   });
 
-  const formatNumber = (num: number) => {
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+  const formatNumber = (num: number): string => {
+    if (num >= 1e33) return `${(num / 1e33).toFixed(2)} Decillion`;
+    if (num >= 1e30) return `${(num / 1e30).toFixed(2)} Nonillion`;
+    if (num >= 1e27) return `${(num / 1e27).toFixed(2)} Octillion`;
+    if (num >= 1e24) return `${(num / 1e24).toFixed(2)} Septillion`;
+    if (num >= 1e21) return `${(num / 1e21).toFixed(2)} Sextillion`;
+    if (num >= 1e18) return `${(num / 1e18).toFixed(2)} Quintillion`;
+    if (num >= 1e15) return `${(num / 1e15).toFixed(2)} Quadrillion`;
+    if (num >= 1e12) return `${(num / 1e12).toFixed(2)} Trillion`;
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)} Billion`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)} Million`;
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
     return num.toFixed(2);
   };
 
   const handleLaunchCoin = () => {
-    if (coinForm.name && coinForm.symbol && coins >= 10000) {
+    if (coinForm.name && coinForm.symbol && dollars >= 10000) {
       launchCoin({
         name: coinForm.name,
         symbol: coinForm.symbol.toUpperCase(),
@@ -51,7 +64,7 @@ const CoinLabPanel: React.FC = () => {
             <h2 className="text-2xl font-bold text-white">Coin Laboratory</h2>
           </div>
           <p className="text-gray-400">
-            Create your own cryptocurrency and manage its market presence. Launch cost: 10,000 BB
+            Create your own cryptocurrency and manage its market presence. Launch cost: $10,000
           </p>
         </div>
 
@@ -150,10 +163,10 @@ const CoinLabPanel: React.FC = () => {
           
           <button
             onClick={handleLaunchCoin}
-            disabled={!coinForm.name || !coinForm.symbol || coins < 10000}
+            disabled={!coinForm.name || !coinForm.symbol || dollars < 10000}
             className="w-full mt-6 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
           >
-            Launch Coin - 10,000 BB
+            Launch Coin - $10,000
           </button>
         </div>
 
@@ -274,10 +287,10 @@ const CoinLabPanel: React.FC = () => {
               
               <button
                 onClick={marketCoin}
-                disabled={coins < 1000}
+                disabled={dollars < 1000}
                 className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
               >
-                Run Marketing Campaign - 1,000 BB
+                Run Marketing Campaign - $1,000
               </button>
               
               <div className="mt-3 text-sm text-gray-400">
@@ -313,10 +326,10 @@ const CoinLabPanel: React.FC = () => {
               
               <button
                 onClick={upgradeCoinTech}
-                disabled={coins < 5000}
+                disabled={dollars < 5000}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
               >
-                Upgrade Technology - 5,000 BB
+                Upgrade Technology - $5,000
               </button>
               
               <div className="mt-3 text-sm text-gray-400">
@@ -396,28 +409,50 @@ const CoinLabPanel: React.FC = () => {
       <div className="bg-gray-800 rounded-lg p-6">
         <h3 className="text-xl font-semibold text-white mb-4">Advanced Strategies</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-700 rounded-lg p-4 opacity-50">
+          <div className="bg-gray-700 rounded-lg p-4">
             <div className="text-red-400 text-lg mb-2">⚠️</div>
             <h4 className="font-semibold text-white mb-2">Pump & Dump</h4>
             <p className="text-sm text-gray-400 mb-3">
-              Artificially inflate price then sell. High profits but maximum risk.
+              Artificially inflate price then sell. Costs $50,000 but can yield massive profits.
             </p>
-            <button disabled className="w-full bg-gray-600 text-gray-400 py-2 px-4 rounded-lg text-sm cursor-not-allowed">
-              Coming Soon
+            <button 
+              onClick={pumpAndDumpCoin}
+              disabled={!customCoin || dollars < 50000}
+              className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm transition-colors disabled:cursor-not-allowed"
+            >
+              {!customCoin ? 'No Coin Launched' : dollars < 50000 ? 'Need $50,000' : 'Execute Pump & Dump'}
             </button>
           </div>
           
-          <div className="bg-gray-700 rounded-lg p-4 opacity-50">
+          <div className="bg-gray-700 rounded-lg p-4">
             <div className="text-orange-400 text-lg mb-2">🏃</div>
             <h4 className="font-semibold text-white mb-2">Rug Pull</h4>
             <p className="text-sm text-gray-400 mb-3">
-              Abandon the project and cash out. Destroys reputation but instant gains.
+              Abandon the project and cash out 80% of market cap. Destroys reputation but instant massive gains.
             </p>
-            <button disabled className="w-full bg-gray-600 text-gray-400 py-2 px-4 rounded-lg text-sm cursor-not-allowed">
-              Coming Soon
+            <button 
+              onClick={rugPullCoin}
+              disabled={!customCoin || rugPullExecuted}
+              className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm transition-colors disabled:cursor-not-allowed"
+            >
+              {!customCoin ? 'No Coin Launched' : rugPullExecuted ? 'Already Executed' : 'Execute Rug Pull'}
             </button>
           </div>
         </div>
+        
+        {customCoin && (
+          <div className="mt-4 bg-yellow-900/20 border border-yellow-500 rounded-lg p-4">
+            <div className="text-yellow-400 font-semibold mb-2">⚠️ High Risk Strategies</div>
+            <div className="text-gray-300 text-sm">
+              These strategies can yield massive profits but come with severe consequences:
+            </div>
+            <ul className="text-gray-400 text-sm mt-2 space-y-1">
+              <li>• Pump & Dump: Temporarily inflates coin price but increases volatility and risk</li>
+              <li>• Rug Pull: Instant massive payout but destroys your coin and reputation permanently</li>
+              <li>• Both strategies significantly increase your risk meter and attract authorities</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

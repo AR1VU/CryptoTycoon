@@ -4,13 +4,16 @@ import { GameState, GameActions } from './gameStore';
 import { createMiningSlice } from './slices/miningSlice';
 import { createPowerSlice } from './slices/powerSlice';
 import { createMarketSlice } from './slices/marketSlice';
+import { createDarkWebSlice } from './slices/darkWebSlice';
 
 const initialState: Omit<GameState, keyof (ReturnType<typeof createMiningSlice> & ReturnType<typeof createPowerSlice> & ReturnType<typeof createMarketSlice>)> = {
-  coins: 100,
+  bitbux: 100,
+  dollars: 1000,
   
   // Custom coin
   coinLaunched: false,
   customCoin: null,
+  rugPullExecuted: false,
   
   // Dark web & hacking
   riskMeter: 0,
@@ -41,6 +44,10 @@ const initialState: Omit<GameState, keyof (ReturnType<typeof createMiningSlice> 
   ],
   currentMission: null,
   hackingToolsLevel: 1,
+  blackMarketItems: [],
+  ownedBlackMarketItems: [],
+  isUnderground: false,
+  undergroundEndTime: 0,
   
   // Upgrades
   upgrades: {},
@@ -62,6 +69,7 @@ export const useGameStore = create<GameState & GameActions>()(
       ...createMiningSlice(set, get),
       ...createPowerSlice(set, get),
       ...createMarketSlice(set, get),
+      ...createDarkWebSlice(set, get),
       
       // Custom coin actions
       launchCoin: (coinData) => {
@@ -72,15 +80,15 @@ export const useGameStore = create<GameState & GameActions>()(
             currentPrice: 1,
             volume: 0
           },
-          coins: state.coins - 10000 // Launch cost
+          dollars: state.dollars - 10000 // Launch cost in dollars
         }));
       },
       
       marketCoin: () => {
         const state = get();
-        if (state.customCoin && state.coins >= 1000) {
+        if (state.customCoin && state.dollars >= 1000) {
           set((state) => ({
-            coins: state.coins - 1000,
+            dollars: state.dollars - 1000,
             customCoin: state.customCoin ? {
               ...state.customCoin,
               marketingLevel: state.customCoin.marketingLevel + 1,
@@ -92,14 +100,72 @@ export const useGameStore = create<GameState & GameActions>()(
       
       upgradeCoinTech: () => {
         const state = get();
-        if (state.customCoin && state.coins >= 5000) {
+        if (state.customCoin && state.dollars >= 5000) {
           set((state) => ({
-            coins: state.coins - 5000,
+            dollars: state.dollars - 5000,
             customCoin: state.customCoin ? {
               ...state.customCoin,
               techLevel: state.customCoin.techLevel + 1,
               volatility: Math.max(state.customCoin.volatility - 5, 5)
             } : null
+          }));
+        }
+      },
+      
+      rugPullCoin: () => {
+        const state = get();
+        if (state.customCoin && !state.rugPullExecuted) {
+          const rugPullAmount = state.customCoin.currentPrice * state.customCoin.totalSupply * 0.8;
+          
+          set((state) => ({
+            dollars: state.dollars + rugPullAmount,
+            rugPullExecuted: true,
+            riskMeter: Math.min(state.riskMeter + 50, 100),
+            reputation: Math.max(state.reputation - 100, -100),
+            customCoin: null,
+            coinLaunched: false
+          }));
+          
+          get().addEvent({
+            title: 'Rug Pull Executed!',
+            description: `Successfully executed rug pull and gained $${rugPullAmount.toFixed(2)}. Reputation severely damaged.`,
+            type: 'danger'
+          });
+        }
+      },
+      
+      pumpAndDumpCoin: () => {
+        const state = get();
+        if (state.customCoin && state.dollars >= 50000) {
+          const pumpMultiplier = 2 + Math.random() * 3; // 2x to 5x pump
+          
+          set((state) => ({
+            dollars: state.dollars - 50000,
+            riskMeter: Math.min(state.riskMeter + 30, 100),
+            customCoin: state.customCoin ? {
+              ...state.customCoin,
+              currentPrice: state.customCoin.currentPrice * pumpMultiplier,
+              volatility: Math.min(state.customCoin.volatility + 20, 80)
+            } : null
+          }));
+          
+          get().addEvent({
+            title: 'Pump & Dump Initiated!',
+            description: `Coin price pumped ${pumpMultiplier.toFixed(1)}x! Sell quickly before the dump.`,
+            type: 'warning'
+          });
+        }
+      },
+      
+      convertBitBuxToDollars: (bitbuxAmount) => {
+        const state = get();
+        if (state.bitbux >= bitbuxAmount) {
+          const dollarAmount = bitbuxAmount * state.marketPrice;
+          const fee = dollarAmount * 0.01; // 1% conversion fee
+          
+          set((state) => ({
+            bitbux: state.bitbux - bitbuxAmount,
+            dollars: state.dollars + dollarAmount - fee
           }));
         }
       },
@@ -147,14 +213,14 @@ export const useGameStore = create<GameState & GameActions>()(
             
             if (success) {
               set((state) => ({
-                coins: state.coins + mission.reward,
+                dollars: state.dollars + mission.reward,
                 reputation: state.reputation + 10,
                 riskMeter: Math.min(state.riskMeter + mission.riskIncrease, 100)
               }));
               
               get().addEvent({
                 title: 'Mission Success!',
-                description: `Successfully completed ${mission.name} and earned ${mission.reward} BitBux`,
+                description: `Successfully completed ${mission.name} and earned $${mission.reward}`,
                 type: 'success'
               });
             } else {
@@ -187,9 +253,9 @@ export const useGameStore = create<GameState & GameActions>()(
       upgradeHackingTools: () => {
         const state = get();
         const cost = state.hackingToolsLevel * 1000;
-        if (state.coins >= cost) {
+        if (state.dollars >= cost) {
           set((state) => ({
-            coins: state.coins - cost,
+            dollars: state.dollars - cost,
             hackingToolsLevel: state.hackingToolsLevel + 1
           }));
         }
@@ -211,9 +277,9 @@ export const useGameStore = create<GameState & GameActions>()(
         const currentLevel = state.upgrades[upgradeId] || 0;
         const cost = (currentLevel + 1) * 100;
         
-        if (state.coins >= cost) {
+        if (state.dollars >= cost) {
           set((state) => ({
-            coins: state.coins - cost,
+            dollars: state.dollars - cost,
             upgrades: {
               ...state.upgrades,
               [upgradeId]: currentLevel + 1
@@ -232,7 +298,7 @@ export const useGameStore = create<GameState & GameActions>()(
       
       prestigeReset: () => {
         const state = get();
-        const newPrestigePoints = Math.floor(state.coins / 1000000);
+        const newPrestigePoints = Math.floor(state.dollars / 1000000);
         
         set({
           ...initialState,
@@ -312,7 +378,7 @@ export const useGameStore = create<GameState & GameActions>()(
         
         // Apply income and costs
         set((state) => ({
-          coins: Math.max(0, state.coins + totalMiningIncome - totalUpkeep)
+          bitbux: Math.max(0, state.bitbux + totalMiningIncome - totalUpkeep)
         }));
         
         // Process mission cooldowns
@@ -327,6 +393,14 @@ export const useGameStore = create<GameState & GameActions>()(
         if (state.riskMeter > 0) {
           set((state) => ({
             riskMeter: Math.max(0, state.riskMeter - 0.1)
+          }));
+        }
+        
+        // Process underground status
+        if (state.isUnderground && Date.now() > state.undergroundEndTime) {
+          set((state) => ({
+            isUnderground: false,
+            undergroundEndTime: 0
           }));
         }
       }

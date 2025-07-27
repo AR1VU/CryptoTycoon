@@ -54,9 +54,9 @@ export interface HackingMission {
 
 export interface GameState {
   // Basic resources
-  coins: number;
+  bitbux: number;
+  dollars: number;
   marketPrice: number;
-  usdBalance: number;
   
   // Mining
   miners: Miner[];
@@ -83,6 +83,7 @@ export interface GameState {
   // Custom coin
   coinLaunched: boolean;
   customCoin: CustomCoin | null;
+  rugPullExecuted: boolean;
   
   // Dark web & hacking
   riskMeter: number;
@@ -90,6 +91,12 @@ export interface GameState {
   hackingMissions: HackingMission[];
   currentMission: string | null;
   hackingToolsLevel: number;
+  blackMarketItems: BlackMarketItem[];
+  ownedBlackMarketItems: string[];
+  
+  // Dark web specific
+  isUnderground: boolean;
+  undergroundEndTime: number;
   
   // Upgrades
   upgrades: Record<string, number>;
@@ -110,6 +117,18 @@ export interface GameState {
   lastSaveTime: number;
 }
 
+export interface BlackMarketItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  riskIncrease: number;
+  effect: string;
+  requiredReputation: number;
+  category: 'mining' | 'power' | 'market' | 'coin';
+  permanent: boolean;
+}
+
 interface GameActions {
   // Mining actions
   clickMine: () => void;
@@ -124,20 +143,28 @@ interface GameActions {
   repairPowerPlant: (id: string) => void;
   
   // Market actions
-  buyBitBux: (amount: number) => void;
-  sellBitBux: (amount: number) => void;
+  buyBitBux: (dollarAmount: number) => void;
+  sellBitBux: (bitbuxAmount: number) => void;
   updateMarketPrice: () => void;
+  convertBitBuxToDollars: (bitbuxAmount: number) => void;
   
   // Custom coin actions
   launchCoin: (coinData: Omit<CustomCoin, 'currentPrice' | 'volume'>) => void;
   marketCoin: () => void;
   upgradeCoinTech: () => void;
+  rugPullCoin: () => void;
+  pumpAndDumpCoin: () => void;
   
   // Hacking actions
   startMission: (missionId: string) => void;
   progressMission: () => void;
   completeCurrentMission: () => void;
   upgradeHackingTools: () => void;
+  
+  // Dark web actions
+  buyBlackMarketItem: (itemId: string) => void;
+  payBribe: () => void;
+  goUnderground: () => void;
   
   // General actions
   addEvent: (event: Omit<GameState['events'][0], 'id' | 'timestamp'>) => void;

@@ -23,15 +23,15 @@ export const createPowerSlice: StateCreator<
   buyPowerPlant: (type) => {
     const state = get();
     const config = POWER_PLANT_CONFIGS[type];
-    const cost = config.baseCost * Math.pow(1.3, state.powerPlants.filter(p => p.type === type).length);
+    const costDollars = config.baseCost * Math.pow(1.3, state.powerPlants.filter(p => p.type === type).length);
     
-    if (state.coins >= cost) {
+    if (state.dollars >= costDollars) {
       const newPlant: PowerPlant = {
         id: `${type}-${Date.now()}`,
         type,
         level: 1,
         capacity: config.baseCapacity,
-        cost,
+        cost: costDollars,
         upkeep: config.baseUpkeep,
         environmentalImpact: config.environmentalImpact,
         status: 'operational',
@@ -39,7 +39,7 @@ export const createPowerSlice: StateCreator<
       };
       
       set((state) => ({
-        coins: state.coins - cost,
+        dollars: state.dollars - costDollars,
         powerPlants: [...state.powerPlants, newPlant],
         powerCapacity: state.powerCapacity + config.baseCapacity,
         pollution: Math.max(0, state.pollution + config.environmentalImpact)
@@ -52,10 +52,10 @@ export const createPowerSlice: StateCreator<
     const plant = state.powerPlants.find(p => p.id === id);
     if (!plant) return;
     
-    const upgradeCost = plant.level * 100;
-    if (state.coins >= upgradeCost) {
+    const upgradeCostDollars = plant.level * 100;
+    if (state.dollars >= upgradeCostDollars) {
       set((state) => ({
-        coins: state.coins - upgradeCost,
+        dollars: state.dollars - upgradeCostDollars,
         powerPlants: state.powerPlants.map(p => 
           p.id === id ? {
             ...p,
@@ -74,10 +74,10 @@ export const createPowerSlice: StateCreator<
     const plant = state.powerPlants.find(p => p.id === id);
     if (!plant || plant.status !== 'malfunction') return;
     
-    const repairCost = plant.level * 75;
-    if (state.coins >= repairCost) {
+    const repairCostDollars = plant.level * 75;
+    if (state.dollars >= repairCostDollars) {
       set((state) => ({
-        coins: state.coins - repairCost,
+        dollars: state.dollars - repairCostDollars,
         powerPlants: state.powerPlants.map(p => 
           p.id === id ? {
             ...p,

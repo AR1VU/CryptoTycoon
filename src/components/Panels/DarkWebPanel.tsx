@@ -13,7 +13,8 @@ const DarkWebPanel: React.FC = () => {
     undergroundEndTime,
     buyBlackMarketItem,
     payBribe,
-    goUnderground
+    goUnderground,
+    exitUnderground
   } = useGameStore();
 
   const formatNumber = (num: number): string => {
@@ -273,6 +274,15 @@ const DarkWebPanel: React.FC = () => {
             >
               {isUnderground ? 'Already Underground' : riskMeter < 50 ? 'Risk Too Low' : 'Go Underground'}
             </button>
+            
+            {isUnderground && (
+              <button
+                onClick={exitUnderground}
+                className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              >
+                Exit Underground
+              </button>
+            )}
           </div>
         </div>
       </div>

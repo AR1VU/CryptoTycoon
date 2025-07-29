@@ -161,6 +161,10 @@ interface GameActions {
   completeCurrentMission: () => void;
   upgradeHackingTools: () => void;
   
+  // Reputation actions
+  donateToUnderground: () => void;
+  exitUnderground: () => void;
+  
   // Dark web actions
   buyBlackMarketItem: (itemId: string) => void;
   payBribe: () => void;

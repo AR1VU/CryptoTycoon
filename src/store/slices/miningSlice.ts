@@ -19,6 +19,11 @@ export const createMiningSlice: StateCreator<
   clickPower: 1,
   
   clickMine: () => {
+    const state = get();
+    // Mining takes 1 minute base time, can be upgraded
+    const miningTime = 60000 / state.clickPower; // 60 seconds divided by click power
+    
+    // For now, we'll give instant mining but you could implement a timer system
     set((state) => ({
       bitbux: state.bitbux + state.clickPower
     }));

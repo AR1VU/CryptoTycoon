@@ -7,7 +7,7 @@ import { createMarketSlice } from './slices/marketSlice';
 import { createDarkWebSlice } from './slices/darkWebSlice';
 
 const initialState: Omit<GameState, keyof (ReturnType<typeof createMiningSlice> & ReturnType<typeof createPowerSlice> & ReturnType<typeof createMarketSlice>)> = {
-  bitbux: 100,
+  bitbux: 0,
   dollars: 1000,
   
   // Custom coin
@@ -114,12 +114,11 @@ export const useGameStore = create<GameState & GameActions>()(
       
       rugPullCoin: () => {
         const state = get();
-        if (state.customCoin && !state.rugPullExecuted) {
+        if (state.customCoin) {
           const rugPullAmount = state.customCoin.currentPrice * state.customCoin.totalSupply * 0.8;
           
           set((state) => ({
             dollars: state.dollars + rugPullAmount,
-            rugPullExecuted: true,
             riskMeter: Math.min(state.riskMeter + 50, 100),
             reputation: Math.max(state.reputation - 100, -100),
             customCoin: null,
@@ -259,6 +258,36 @@ export const useGameStore = create<GameState & GameActions>()(
             hackingToolsLevel: state.hackingToolsLevel + 1
           }));
         }
+      },
+      
+      // Reputation building actions
+      donateToUnderground: () => {
+        const state = get();
+        if (state.dollars >= 5000) {
+          set((state) => ({
+            dollars: state.dollars - 5000,
+            reputation: state.reputation + 5
+          }));
+          
+          get().addEvent({
+            title: 'Underground Donation',
+            description: 'Donated $5,000 to underground operations. Reputation increased.',
+            type: 'info'
+          });
+        }
+      },
+      
+      exitUnderground: () => {
+        set((state) => ({
+          isUnderground: false,
+          undergroundEndTime: 0
+        }));
+        
+        get().addEvent({
+          title: 'Surfaced',
+          description: 'Exited underground status. Normal operations resumed.',
+          type: 'info'
+        });
       },
       
       // General actions

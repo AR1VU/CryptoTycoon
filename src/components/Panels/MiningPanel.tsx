@@ -10,11 +10,13 @@ const MiningPanel: React.FC = () => {
     miners,
     miningPools,
     clickPower,
+    lastClickMine,
     clickMine,
     buyMiner,
     upgradeMiner,
     repairMiner,
     assignMinerToPool,
+    upgradeClickPower,
     convertBitBuxToDollars
   } = useGameStore();
   
@@ -22,16 +24,16 @@ const MiningPanel: React.FC = () => {
   const [convertAmount, setConvertAmount] = useState<string>('');
 
   const minerTypes = [
-    { type: 'cpu' as const, name: 'CPU Miner', baseCost: 10, icon: '🖥️' },
-    { type: 'gpu' as const, name: 'GPU Miner', baseCost: 100, icon: '🎮' },
-    { type: 'asic' as const, name: 'ASIC Miner', baseCost: 1000, icon: '⚡' },
-    { type: 'quantum' as const, name: 'Quantum Miner', baseCost: 10000, icon: '🌌' }
+    { type: 'cpu' as const, name: 'CPU Miner', baseCost: 50, icon: '🖥️' },
+    { type: 'gpu' as const, name: 'GPU Miner', baseCost: 500, icon: '🎮' },
+    { type: 'asic' as const, name: 'ASIC Miner', baseCost: 5000, icon: '⚡' },
+    { type: 'quantum' as const, name: 'Quantum Miner', baseCost: 50000, icon: '🌌' }
   ];
 
   const getMinerCost = (type: string, count: number) => {
     const baseConfig = minerTypes.find(m => m.type === type);
     if (!baseConfig) return 0;
-    const costInBitBux = baseConfig.baseCost * Math.pow(1.5, count);
+    const costInBitBux = baseConfig.baseCost * Math.pow(2, count); // Exponential scaling
     return costInBitBux * marketPrice; // Convert to dollars
   };
 
@@ -67,6 +69,16 @@ const MiningPanel: React.FC = () => {
     }
   };
 
+  const getMiningCooldown = () => {
+    if (!lastClickMine) return 0;
+    const cooldown = 60000 / clickPower; // 60 seconds divided by click power
+    const elapsed = Date.now() - lastClickMine;
+    return Math.max(0, cooldown - elapsed);
+  };
+
+  const canMine = getMiningCooldown() === 0;
+  const cooldownSeconds = Math.ceil(getMiningCooldown() / 1000);
+
   return (
     <div className="space-y-6">
       {/* Mining Header */}
@@ -76,12 +88,22 @@ const MiningPanel: React.FC = () => {
             <Cpu className="mr-3 text-yellow-400" />
             Mining Operations
           </h2>
-          <button
-            onClick={clickMine}
-            className="bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition-colors transform hover:scale-105 active:scale-95"
-          >
-            ⛏️ Mine BitBux (+{clickPower})
-          </button>
+          <div className="text-right">
+            <button
+              onClick={clickMine}
+              disabled={!canMine}
+              className={`px-8 py-4 rounded-lg font-bold text-lg transition-colors transform ${
+                canMine 
+                  ? 'bg-yellow-600 hover:bg-yellow-700 text-white hover:scale-105 active:scale-95'
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {canMine ? `⛏️ Mine BitBux (+${clickPower})` : `⏱️ Cooldown: ${cooldownSeconds}s`}
+            </button>
+            <div className="text-sm text-gray-400 mt-2">
+              Mining Speed: {(60 / clickPower).toFixed(1)}s per mine
+            </div>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -96,6 +118,25 @@ const MiningPanel: React.FC = () => {
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="text-gray-400 text-sm">Total Miners</div>
             <div className="text-2xl font-bold text-white">{miners.length}</div>
+          </div>
+        </div>
+        
+        {/* Click Power Upgrade */}
+        <div className="mt-4 bg-gray-700 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-white font-semibold">Upgrade Mining Speed</h4>
+              <div className="text-sm text-gray-400">
+                Current Level: {clickPower} | Next: {(60 / (clickPower + 1)).toFixed(1)}s per mine
+              </div>
+            </div>
+            <button
+              onClick={upgradeClickPower}
+              disabled={dollars < clickPower * 1000}
+              className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-2 rounded font-medium transition-colors disabled:cursor-not-allowed"
+            >
+              Upgrade - ${formatNumber(clickPower * 1000)}
+            </button>
           </div>
         </div>
         
@@ -270,9 +311,9 @@ const MiningPanel: React.FC = () => {
                     
                     <button
                       onClick={() => upgradeMiner(miner.id)}
-                      disabled={dollars < miner.level * 50}
+                      disabled={dollars < miner.level * miner.level * 500}
                       className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                      title={`Upgrade ($${miner.level * 50})`}
+                      title={`Upgrade ($${formatNumber(miner.level * miner.level * 500)})`}
                     >
                       <TrendingUp size={14} />
                     </button>
@@ -280,9 +321,9 @@ const MiningPanel: React.FC = () => {
                     {miner.status === 'broken' && (
                       <button
                         onClick={() => repairMiner(miner.id)}
-                        disabled={dollars < miner.level * 25}
+                        disabled={dollars < miner.level * 250}
                         className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                        title={`Repair ($${miner.level * 25})`}
+                        title={`Repair ($${formatNumber(miner.level * 250)})`}
                       >
                         <Wrench size={14} />
                       </button>

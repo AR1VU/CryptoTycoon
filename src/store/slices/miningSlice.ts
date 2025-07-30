@@ -2,10 +2,10 @@ import { StateCreator } from 'zustand';
 import { GameState, GameActions, Miner } from '../gameStore';
 
 const MINER_CONFIGS = {
-  cpu: { baseSpeed: 1, baseCost: 10, baseEfficiency: 0.8 },
-  gpu: { baseSpeed: 5, baseCost: 100, baseEfficiency: 0.9 },
-  asic: { baseSpeed: 25, baseCost: 1000, baseEfficiency: 0.95 },
-  quantum: { baseSpeed: 100, baseCost: 10000, baseEfficiency: 0.99 }
+  cpu: { baseSpeed: 1, baseCost: 50, baseEfficiency: 0.8 },
+  gpu: { baseSpeed: 5, baseCost: 500, baseEfficiency: 0.9 },
+  asic: { baseSpeed: 25, baseCost: 5000, baseEfficiency: 0.95 },
+  quantum: { baseSpeed: 100, baseCost: 50000, baseEfficiency: 0.99 }
 };
 
 export const createMiningSlice: StateCreator<
@@ -20,19 +20,33 @@ export const createMiningSlice: StateCreator<
   
   clickMine: () => {
     const state = get();
-    // Mining takes 1 minute base time, can be upgraded
-    const miningTime = 60000 / state.clickPower; // 60 seconds divided by click power
+    // Check if enough time has passed since last click mine (1 minute base, reduced by click power)
+    const now = Date.now();
+    const miningCooldown = 60000 / state.clickPower; // 60 seconds divided by click power
     
-    // For now, we'll give instant mining but you could implement a timer system
-    set((state) => ({
-      bitbux: state.bitbux + state.clickPower
-    }));
+    if (!state.lastClickMine || now - state.lastClickMine >= miningCooldown) {
+      set((state) => ({
+        bitbux: state.bitbux + state.clickPower,
+        lastClickMine: now
+      }));
+    }
+  },
+  
+  upgradeClickPower: () => {
+    const state = get();
+    const cost = state.clickPower * 1000; // Each level costs 1000 * current level
+    if (state.dollars >= cost) {
+      set((state) => ({
+        dollars: state.dollars - cost,
+        clickPower: state.clickPower + 1
+      }));
+    }
   },
   
   buyMiner: (type) => {
     const state = get();
     const config = MINER_CONFIGS[type];
-    const costInBitBux = config.baseCost * Math.pow(1.5, state.miners.filter(m => m.type === type).length);
+    const costInBitBux = config.baseCost * Math.pow(2, state.miners.filter(m => m.type === type).length); // Exponential scaling
     const costInDollars = costInBitBux * state.marketPrice;
     
     if (state.dollars >= costInDollars) {
@@ -53,7 +67,7 @@ export const createMiningSlice: StateCreator<
       set((state) => ({
         dollars: state.dollars - costInDollars,
         miners: [...state.miners, newMiner],
-        powerUsed: state.powerUsed + config.baseSpeed * 0.1
+        powerUsed: state.powerUsed + (config.baseSpeed * 0.5) // More realistic power consumption
       }));
     }
   },
@@ -63,15 +77,21 @@ export const createMiningSlice: StateCreator<
     const miner = state.miners.find(m => m.id === id);
     if (!miner) return;
     
-    const upgradeCostDollars = miner.level * 50;
+    const upgradeCostDollars = miner.level * miner.level * 500; // Quadratic scaling: level² * 500
     if (state.dollars >= upgradeCostDollars) {
+      const oldPowerConsumption = miner.speed * 0.5;
+      const newSpeed = miner.speed * 1.2;
+      const newPowerConsumption = newSpeed * 0.5;
+      const powerIncrease = newPowerConsumption - oldPowerConsumption;
+      
       set((state) => ({
         dollars: state.dollars - upgradeCostDollars,
+        powerUsed: state.powerUsed + powerIncrease,
         miners: state.miners.map(m => 
           m.id === id ? {
             ...m,
             level: m.level + 1,
-            speed: m.speed * 1.2,
+            speed: newSpeed,
             efficiency: Math.min(m.efficiency * 1.05, 0.99)
           } : m
         )
@@ -84,7 +104,7 @@ export const createMiningSlice: StateCreator<
     const miner = state.miners.find(m => m.id === id);
     if (!miner || miner.status !== 'broken') return;
     
-    const repairCostDollars = miner.level * 25;
+    const repairCostDollars = miner.level * 250; // More expensive repairs
     if (state.dollars >= repairCostDollars) {
       set((state) => ({
         dollars: state.dollars - repairCostDollars,
@@ -92,7 +112,8 @@ export const createMiningSlice: StateCreator<
           m.id === id ? {
             ...m,
             status: 'operational',
-            currentDurability: m.durability * 0.8
+            currentDurability: m.durability * 0.8,
+            efficiency: m.efficiency * 0.95 // Slight efficiency loss after repair
           } : m
         )
       }));

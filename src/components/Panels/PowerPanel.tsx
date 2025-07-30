@@ -1,46 +1,52 @@
 import React from 'react';
-import { Zap, TrendingUp, Wrench, AlertTriangle } from 'lucide-react';
+import { Zap, TrendingUp, Wrench, AlertTriangle, DollarSign } from 'lucide-react';
 import { useGameStore } from '../../store';
 
 const PowerPanel: React.FC = () => {
   const {
     powerUsed,
     powerCapacity,
+    batteryCapacity,
+    batteryStored,
     powerPlants,
     gridEfficiency,
     pollution,
     dollars,
     buyPowerPlant,
     upgradePowerPlant,
-    repairPowerPlant
+    repairPowerPlant,
+    sellBatteryPower,
+    upgradeBattery
   } = useGameStore();
+
+  const [sellAmount, setSellAmount] = React.useState<string>('1');
 
   const powerPlantTypes = [
     { 
       type: 'coal' as const, 
       name: 'Coal Power Plant', 
-      baseCost: 200, 
+      baseCost: 100000, 
       icon: '🏭',
       description: 'Cheap but polluting'
     },
     { 
       type: 'solar' as const, 
       name: 'Solar Farm', 
-      baseCost: 500, 
+      baseCost: 1000000, 
       icon: '☀️',
       description: 'Clean but expensive'
     },
     { 
       type: 'nuclear' as const, 
       name: 'Nuclear Plant', 
-      baseCost: 5000, 
+      baseCost: 50000000000, 
       icon: '☢️',
       description: 'High capacity, low pollution'
     },
     { 
       type: 'quantum' as const, 
       name: 'Quantum Reactor', 
-      baseCost: 50000, 
+      baseCost: 10000000000000, 
       icon: '⚛️',
       description: 'Ultimate power source'
     }
@@ -49,7 +55,7 @@ const PowerPanel: React.FC = () => {
   const getPowerPlantCost = (type: string, count: number) => {
     const baseConfig = powerPlantTypes.find(p => p.type === type);
     if (!baseConfig) return 0;
-    return baseConfig.baseCost * Math.pow(1.3, count);
+    return baseConfig.baseCost * Math.pow(1.5, count);
   };
 
   const formatNumber = (num: number): string => {
@@ -83,6 +89,8 @@ const PowerPanel: React.FC = () => {
 
   const powerUtilization = (powerUsed / powerCapacity) * 100;
   const effectivePowerCapacity = powerCapacity * gridEfficiency;
+  const excessPower = Math.max(0, effectivePowerCapacity - powerUsed);
+  const batteryUtilization = (batteryStored / batteryCapacity) * 100;
 
   return (
     <div className="space-y-6">
@@ -113,17 +121,31 @@ const PowerPanel: React.FC = () => {
           <div className="bg-gray-700 rounded-lg p-4">
             <div className="text-gray-400 text-sm">Total Capacity</div>
             <div className="text-2xl font-bold text-green-400">
-              {formatNumber(powerCapacity)} MW
+              {powerCapacity < 1000 ? powerCapacity.toFixed(1) : formatNumber(powerCapacity)} MW
             </div>
             <div className="text-sm text-gray-400 mt-1">
-              Effective: {formatNumber(effectivePowerCapacity)} MW
+              Effective: {effectivePowerCapacity < 1000 ? effectivePowerCapacity.toFixed(1) : formatNumber(effectivePowerCapacity)} MW
             </div>
+            {excessPower > 0 && (
+              <div className="text-sm text-green-400 mt-1">
+                Excess: {excessPower.toFixed(1)} MW
+              </div>
+            )}
           </div>
           
           <div className="bg-gray-700 rounded-lg p-4">
-            <div className="text-gray-400 text-sm">Grid Efficiency</div>
-            <div className="text-2xl font-bold text-yellow-400">
-              {(gridEfficiency * 100).toFixed(1)}%
+            <div className="text-gray-400 text-sm">Battery Storage</div>
+            <div className="text-2xl font-bold text-purple-400">
+              {batteryStored.toFixed(1)} / {batteryCapacity} MWh
+            </div>
+            <div className="bg-gray-600 rounded-full h-2 mt-2">
+              <div
+                className="bg-purple-500 h-2 rounded-full transition-all"
+                style={{ width: `${batteryUtilization}%` }}
+              />
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              {batteryUtilization.toFixed(1)}% Full
             </div>
           </div>
           
@@ -152,6 +174,93 @@ const PowerPanel: React.FC = () => {
             </div>
           </div>
         )}
+        
+        {/* Battery Management */}
+        <div className="mt-4 bg-purple-900/20 border border-purple-500 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <div className="text-purple-400 mr-3">🔋</div>
+              <div>
+                <div className="text-purple-400 font-semibold">Battery System</div>
+                <div className="text-gray-300 text-sm">
+                  Store excess power and sell it for profit. Charging rate depends on your power plants.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={upgradeBattery}
+              disabled={dollars < batteryCapacity * 1000}
+              className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
+            >
+              Upgrade (+10 MWh) - ${formatNumber(batteryCapacity * 1000)}
+            </button>
+          </div>
+          
+          {/* Battery Charging Info */}
+          {powerPlants.length > 0 && excessPower > 0 && (
+            <div className="bg-gray-800 rounded-lg p-3 mb-4">
+              <div className="text-green-400 text-sm font-semibold mb-1">⚡ Charging Active</div>
+              <div className="text-gray-300 text-sm">
+                Excess power is automatically charging your battery. Charging rate varies by power plant type.
+              </div>
+            </div>
+          )}
+          
+          {powerPlants.length === 0 && (
+            <div className="bg-gray-800 rounded-lg p-3 mb-4">
+              <div className="text-red-400 text-sm font-semibold mb-1">⚠️ No Power Plants</div>
+              <div className="text-gray-300 text-sm">
+                You need to build power plants to charge your battery and earn money from energy sales.
+              </div>
+            </div>
+          )}
+          
+          {/* Battery Power Selling */}
+          {batteryStored > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <DollarSign className="text-purple-400 mr-3" />
+                <div>
+                  <div className="text-purple-400 font-semibold">Sell Battery Power</div>
+                  <div className="text-gray-300 text-sm">
+                    Sell stored energy at $25/MWh. Available: {batteryStored.toFixed(1)} MWh
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  value={sellAmount}
+                  onChange={(e) => setSellAmount(e.target.value)}
+                  className="w-20 bg-gray-700 text-white rounded px-2 py-1 text-sm"
+                  min="0"
+                  max={batteryStored.toFixed(1)}
+                  step="0.1"
+                />
+                <span className="text-gray-400 text-sm">MWh</span>
+                <button
+                  onClick={() => setSellAmount(batteryStored.toFixed(1))}
+                  className="bg-gray-600 hover:bg-gray-500 text-white px-2 py-1 rounded text-sm"
+                >
+                  Max
+                </button>
+                <button
+                  onClick={() => {
+                    const amount = parseFloat(sellAmount);
+                    if (!isNaN(amount) && amount > 0) {
+                      sellBatteryPower(amount);
+                      setSellAmount('1');
+                    }
+                  }}
+                  disabled={!sellAmount || parseFloat(sellAmount) <= 0 || parseFloat(sellAmount) > batteryStored}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-4 py-1 rounded font-medium transition-colors disabled:cursor-not-allowed"
+                >
+                  Sell (+${(parseFloat(sellAmount || '0') * 25).toFixed(2)})
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Buy Power Plants */}
@@ -213,6 +322,14 @@ const PowerPanel: React.FC = () => {
                         Efficiency: {(plant.efficiency * 100).toFixed(1)}% | 
                         Upkeep: ${formatNumber(plant.upkeep)}/tick
                       </div>
+                      <div className="text-sm text-gray-400">
+                        Charging Rate: {
+                          plant.type === 'coal' ? '0.1' :
+                          plant.type === 'solar' ? '0.05' :
+                          plant.type === 'nuclear' ? '0.3' :
+                          plant.type === 'quantum' ? '0.8' : '0'
+                        } MWh/tick
+                      </div>
                       <div className="text-sm">
                         <span className="text-gray-400">Status: </span>
                         <span className={getStatusColor(plant.status)}>
@@ -231,9 +348,9 @@ const PowerPanel: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => upgradePowerPlant(plant.id)}
-                      disabled={dollars < plant.level * 100}
+                      disabled={dollars < plant.level * plant.level * 10000}
                       className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                      title={`Upgrade ($${plant.level * 100})`}
+                      title={`Upgrade ($${formatNumber(plant.level * plant.level * 10000)})`}
                     >
                       <TrendingUp size={14} />
                     </button>
@@ -241,9 +358,9 @@ const PowerPanel: React.FC = () => {
                     {plant.status === 'malfunction' && (
                       <button
                         onClick={() => repairPowerPlant(plant.id)}
-                        disabled={dollars < plant.level * 75}
+                        disabled={dollars < plant.level * 5000}
                         className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                        title={`Repair ($${plant.level * 75})`}
+                        title={`Repair ($${formatNumber(plant.level * 5000)})`}
                       >
                         <Wrench size={14} />
                       </button>

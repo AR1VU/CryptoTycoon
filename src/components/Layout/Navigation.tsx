@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { 
   Pickaxe, 
   Zap, 
@@ -7,9 +8,11 @@ import {
   Shield, 
   Terminal,
   Settings,
-  Save
+  Save,
+  RotateCcw
 } from 'lucide-react';
 import { useGameStore } from '../../store';
+import ResetModal from '../UI/ResetModal';
 
 interface NavigationProps {
   activePanel: string;
@@ -17,7 +20,21 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ activePanel, setActivePanel }) => {
-  const { bitbux, dollars, marketPrice, powerUsed, powerCapacity, riskMeter, saveGame } = useGameStore();
+  const { bitbux, dollars, marketPrice, powerUsed, powerCapacity, riskMeter, saveGame, resetGame } = useGameStore();
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showArrestModal, setShowArrestModal] = useState(false);
+  const [arrestPrestigePoints, setArrestPrestigePoints] = useState(0);
+  
+  // Listen for arrest modal trigger
+  React.useEffect(() => {
+    const handleArrestModal = (event: CustomEvent) => {
+      setArrestPrestigePoints(event.detail.prestigePoints);
+      setShowArrestModal(true);
+    };
+    
+    window.addEventListener('showArrestModal', handleArrestModal as EventListener);
+    return () => window.removeEventListener('showArrestModal', handleArrestModal as EventListener);
+  }, []);
   
   const formatNumber = (num: number): string => {
     if (num >= 1e306) return `${(num / 1e306).toFixed(2)} Centillion`;
@@ -152,6 +169,15 @@ const Navigation: React.FC<NavigationProps> = ({ activePanel, setActivePanel }) 
             >
               <Save size={16} />
             </button>
+
+            {/* Reset Button */}
+            <button
+              onClick={() => setShowResetModal(true)}
+              className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-md transition-colors"
+              title="Reset Game"
+            >
+              <RotateCcw size={16} />
+            </button>
           </div>
 
           {/* Status Bar */}
@@ -220,6 +246,23 @@ const Navigation: React.FC<NavigationProps> = ({ activePanel, setActivePanel }) 
           })}
         </div>
       </div>
+      
+      {/* Reset Modal */}
+      <ResetModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={resetGame}
+        type="manual"
+      />
+      
+      {/* Arrest Modal */}
+      <ResetModal
+        isOpen={showArrestModal}
+        onClose={() => setShowArrestModal(false)}
+        onConfirm={() => {}}
+        type="arrest"
+        prestigePoints={arrestPrestigePoints}
+      />
     </nav>
   );
 };

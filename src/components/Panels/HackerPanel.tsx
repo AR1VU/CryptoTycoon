@@ -165,7 +165,7 @@ const HackerPanel: React.FC = () => {
               {hackingToolsLevel}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              Upgrade Cost: ${formatNumber(hackingToolsLevel * 1000)}
+              Upgrade Cost: ${formatNumber(hackingToolsLevel * hackingToolsLevel * 5000)}
             </div>
           </div>
           
@@ -311,14 +311,14 @@ const HackerPanel: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-yellow-400 font-mono">
-                UPGRADE_COST: ${formatNumber(hackingToolsLevel * 1000)}
+                UPGRADE_COST: ${formatNumber(hackingToolsLevel * hackingToolsLevel * 5000)}
               </div>
             </div>
           </div>
           
           <button
             onClick={upgradeHackingTools}
-            disabled={dollars < hackingToolsLevel * 1000}
+            disabled={dollars < hackingToolsLevel * hackingToolsLevel * 5000}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-2 px-4 rounded-lg font-mono font-medium transition-colors disabled:cursor-not-allowed"
           >
             UPGRADE_TOOLS

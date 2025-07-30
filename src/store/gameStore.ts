@@ -57,6 +57,7 @@ export interface GameState {
   bitbux: number;
   dollars: number;
   marketPrice: number;
+  lastClickMine?: number;
   
   // Mining
   miners: Miner[];
@@ -66,6 +67,8 @@ export interface GameState {
   // Power
   powerUsed: number;
   powerCapacity: number;
+  batteryCapacity: number;
+  batteryStored: number;
   powerPlants: PowerPlant[];
   gridEfficiency: number;
   pollution: number;
@@ -93,6 +96,7 @@ export interface GameState {
   hackingToolsLevel: number;
   blackMarketItems: BlackMarketItem[];
   ownedBlackMarketItems: string[];
+  blackMarketItemExpiry: Record<string, number>; // itemId -> expiry timestamp
   
   // Dark web specific
   isUnderground: boolean;
@@ -127,6 +131,7 @@ export interface BlackMarketItem {
   requiredReputation: number;
   category: 'mining' | 'power' | 'market' | 'coin';
   permanent: boolean;
+  duration: number; // Duration in milliseconds, 0 for permanent
 }
 
 interface GameActions {
@@ -136,11 +141,14 @@ interface GameActions {
   upgradeMiner: (id: string) => void;
   repairMiner: (id: string) => void;
   assignMinerToPool: (id: string, pool: string) => void;
+  upgradeClickPower: () => void;
   
   // Power actions
   buyPowerPlant: (type: PowerPlant['type']) => void;
   upgradePowerPlant: (id: string) => void;
   repairPowerPlant: (id: string) => void;
+  sellBatteryPower: (amount: number) => void;
+  upgradeBattery: () => void;
   
   // Market actions
   buyBitBux: (dollarAmount: number) => void;

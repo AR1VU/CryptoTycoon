@@ -7,8 +7,8 @@ export const createMarketSlice: StateCreator<
   [],
   Pick<GameState, 'marketPrice' | 'marketHistory' | 'portfolioValue' | 'transactionHistory'> & Pick<GameActions, 'buyBitBux' | 'sellBitBux' | 'updateMarketPrice'>
 > = (set, get) => ({
-  marketPrice: 50000,
-  marketHistory: [50000],
+  marketPrice: 1000,
+  marketHistory: [1000],
   portfolioValue: 0,
   transactionHistory: [],
   

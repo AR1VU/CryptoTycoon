@@ -9,6 +9,7 @@ const DarkWebPanel: React.FC = () => {
     reputation, 
     blackMarketItems, 
     ownedBlackMarketItems,
+    blackMarketItemExpiry,
     isUnderground,
     undergroundEndTime,
     buyBlackMarketItem,
@@ -136,27 +137,36 @@ const DarkWebPanel: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {blackMarketItems.map((item) => {
             const isOwned = ownedBlackMarketItems.includes(item.id);
+            const expiryTime = blackMarketItemExpiry[item.id];
+            const isExpired = expiryTime && expiryTime > 0 && Date.now() > expiryTime;
+            const timeRemaining = expiryTime && expiryTime > 0 ? Math.max(0, expiryTime - Date.now()) : 0;
             const canAfford = dollars >= item.price;
             const hasReputation = reputation >= item.requiredReputation;
-            const available = !isOwned && canAfford && hasReputation;
+            const available = (!isOwned || isExpired) && canAfford && hasReputation;
             
             return (
               <div key={item.id} className={`bg-gray-700 rounded-lg p-4 border ${
-                available ? 'border-gray-600' : isOwned ? 'border-green-600' : 'border-gray-800'
+                available ? 'border-gray-600' : (isOwned && !isExpired) ? 'border-green-600' : 'border-gray-800'
               }`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h4 className={`font-semibold ${
-                      isOwned ? 'text-green-400' : available ? 'text-white' : 'text-gray-500'
+                      (isOwned && !isExpired) ? 'text-green-400' : available ? 'text-white' : 'text-gray-500'
                     }`}>
                       {item.name}
-                      {isOwned && <span className="ml-2 text-xs bg-green-600 px-2 py-1 rounded">OWNED</span>}
+                      {(isOwned && !isExpired) && <span className="ml-2 text-xs bg-green-600 px-2 py-1 rounded">ACTIVE</span>}
+                      {isExpired && <span className="ml-2 text-xs bg-red-600 px-2 py-1 rounded">EXPIRED</span>}
                     </h4>
                     <p className={`text-sm mt-1 ${
                       available ? 'text-gray-400' : 'text-gray-600'
                     }`}>
                       {item.description}
                     </p>
+                    {(isOwned && !isExpired && !item.permanent) && (
+                      <div className="text-xs text-yellow-400 mt-1">
+                        Expires in: {Math.ceil(timeRemaining / 3600000)}h {Math.ceil((timeRemaining % 3600000) / 60000)}m
+                      </div>
+                    )}
                   </div>
                   <div className="text-red-400 text-lg">
                     ⚠️
@@ -179,18 +189,24 @@ const DarkWebPanel: React.FC = () => {
                   <div className="text-green-400 text-xs mt-2">
                     Effect: {item.effect}
                   </div>
+                  {!item.permanent && (
+                    <div className="text-blue-400 text-xs">
+                      Duration: {Math.floor(item.duration / 3600000)}h
+                    </div>
+                  )}
                 </div>
                 
                 <button
                   onClick={() => buyBlackMarketItem(item.id)}
-                  disabled={!available || isOwned}
+                  disabled={!available || (isOwned && !isExpired)}
                   className={`w-full mt-4 py-2 px-4 rounded-lg font-medium transition-colors ${
-                    available && !isOwned
+                    available && (!isOwned || isExpired)
                       ? 'bg-red-600 hover:bg-red-700 text-white'
                       : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  {isOwned ? 'Already Owned' :
+                  {(isOwned && !isExpired) ? 'Already Active' :
+                   isExpired ? 'Repurchase' :
                    !hasReputation ? `Requires ${item.requiredReputation} Reputation` : 
                    !canAfford ? 'Insufficient Funds' : 'Purchase'}
                 </button>

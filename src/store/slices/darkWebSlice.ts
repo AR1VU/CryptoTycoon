@@ -107,6 +107,15 @@ export const createDarkWebSlice: StateCreator<
     set((state) => ({
       dollars: state.dollars - item.price,
       riskMeter: Math.min(state.riskMeter + item.riskIncrease, 100),
+      tax: {
+        ...state.tax,
+        monthlyBreakdown: {
+          ...state.tax.monthlyBreakdown,
+          darkWeb: state.tax.monthlyBreakdown.darkWeb + (item.price * 0.15) // 15% "tax" on dark web purchases
+        },
+        unpaidBalance: state.tax.unpaidBalance + (item.price * 0.15),
+        taxMeter: Math.min(100, state.tax.taxMeter + 5)
+      },
       ownedBlackMarketItems: state.ownedBlackMarketItems.includes(itemId) 
         ? state.ownedBlackMarketItems 
         : [...state.ownedBlackMarketItems, itemId],

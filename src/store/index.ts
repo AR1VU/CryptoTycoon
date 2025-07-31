@@ -5,6 +5,7 @@ import { createMiningSlice } from './slices/miningSlice';
 import { createPowerSlice } from './slices/powerSlice';
 import { createMarketSlice } from './slices/marketSlice';
 import { createDarkWebSlice } from './slices/darkWebSlice';
+import { createTaxSlice } from './slices/taxSlice';
 
 const initialState: Omit<GameState, keyof (ReturnType<typeof createMiningSlice> & ReturnType<typeof createPowerSlice> & ReturnType<typeof createMarketSlice>)> = {
   bitbux: 0,
@@ -61,7 +62,33 @@ const initialState: Omit<GameState, keyof (ReturnType<typeof createMiningSlice> 
   prestige: 0,
   prestigePoints: 0,
   gameStartTime: Date.now(),
-  lastSaveTime: Date.now()
+  lastSaveTime: Date.now(),
+  
+  // Tax system
+  tax: {
+    miningRate: 0.15,
+    capitalGainsRate: 0.20,
+    powerTaxRate: 0.05,
+    customCoinTaxRate: 0.10,
+    evasionAttempts: 0,
+    auditsTriggered: 0,
+    totalPaid: 0,
+    unpaidBalance: 0,
+    nextDueDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    lastPaymentDate: Date.now(),
+    monthlyBreakdown: {
+      mining: 0,
+      capitalGains: 0,
+      power: 0,
+      darkWeb: 0,
+      customCoin: 0
+    },
+    isAuditActive: false,
+    auditEndTime: 0,
+    taxMeter: 0,
+    shellCompanies: 0,
+    lobbyingLevel: 0
+  }
 };
 
 export const useGameStore = create<GameState & GameActions>()(
@@ -72,6 +99,7 @@ export const useGameStore = create<GameState & GameActions>()(
       ...createPowerSlice(set, get),
       ...createMarketSlice(set, get),
       ...createDarkWebSlice(set, get),
+      ...createTaxSlice(set, get),
       
       // Custom coin actions
       launchCoin: (coinData) => {
@@ -286,8 +314,8 @@ export const useGameStore = create<GameState & GameActions>()(
         }));
         
         get().addEvent({
-          title: 'Surfaced',
-          description: 'Exited underground status. Normal operations resumed.',
+          title: 'Blockchain Audit Complete',
+          description: `Smart contract analysis resulted in $${fine.toFixed(2)} fine and loss of ${equipmentLoss} miners.`,
           type: 'info'
         });
       },
@@ -399,6 +427,45 @@ export const useGameStore = create<GameState & GameActions>()(
               });
             }
           });
+        }
+        
+        if (Date.now() > state.tax.nextDueDate && state.tax.unpaidBalance > 1000) {
+          // Trigger tax penalties
+          const penalty = state.tax.unpaidBalance * 0.1;
+          set((state) => ({
+            tax: {
+              ...state.tax,
+              unpaidBalance: state.tax.unpaidBalance + penalty,
+              taxMeter: Math.min(100, state.tax.taxMeter + 15)
+            }
+          }));
+          
+          get().addEvent({
+            title: 'Tax Penalty Applied',
+            description: `Late tax payment penalty: $${penalty.toFixed(2)}`,
+            type: 'warning'
+          });
+        }
+        
+        // Random audit chance based on tax meter
+        if (state.tax.taxMeter > 70 && Math.random() < 0.001 && !state.tax.isAuditActive) {
+          get().triggerAudit();
+        }
+        
+        // Handle active audit
+        if (state.tax.isAuditActive && Date.now() > state.tax.auditEndTime) {
+          get().handleAuditResult();
+        }
+        
+        // Annual tax meter reset
+        const yearsSinceStart = (Date.now() - state.gameStartTime) / (365 * 24 * 60 * 60 * 1000);
+        if (yearsSinceStart >= 1 && state.tax.taxMeter > 0) {
+          set((state) => ({
+            tax: {
+              ...state.tax,
+              taxMeter: 0
+            }
+          }));
         }
         
         // Process mining
@@ -513,8 +580,21 @@ export const useGameStore = create<GameState & GameActions>()(
         
         // Apply income and costs
         set((state) => ({
-          bitbux: Math.max(0, state.bitbux + totalMiningIncome),
+          bitbux: Math.max(0, state.bitbux + totalMiningIncome * (1 - state.tax.miningRate)),
           dollars: Math.max(0, state.dollars - totalUpkeep)
+        }));
+        
+        // Update tax breakdown
+        const miningTax = totalMiningIncome * state.tax.miningRate;
+        set((state) => ({
+          tax: {
+            ...state.tax,
+            monthlyBreakdown: {
+              ...state.tax.monthlyBreakdown,
+              mining: state.tax.monthlyBreakdown.mining + miningTax
+            },
+            unpaidBalance: state.tax.unpaidBalance + miningTax
+          }
         }));
         
         // Process mission cooldowns

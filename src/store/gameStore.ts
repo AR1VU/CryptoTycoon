@@ -119,6 +119,32 @@ export interface GameState {
   prestigePoints: number;
   gameStartTime: number;
   lastSaveTime: number;
+  
+  // Tax system
+  tax: {
+    miningRate: number;
+    capitalGainsRate: number;
+    powerTaxRate: number;
+    customCoinTaxRate: number;
+    evasionAttempts: number;
+    auditsTriggered: number;
+    totalPaid: number;
+    unpaidBalance: number;
+    nextDueDate: number;
+    lastPaymentDate: number;
+    monthlyBreakdown: {
+      mining: number;
+      capitalGains: number;
+      power: number;
+      darkWeb: number;
+      customCoin: number;
+    };
+    isAuditActive: boolean;
+    auditEndTime: number;
+    taxMeter: number; // 0-100, resets annually
+    shellCompanies: number;
+    lobbyingLevel: number;
+  };
 }
 
 export interface BlackMarketItem {
@@ -177,6 +203,15 @@ interface GameActions {
   buyBlackMarketItem: (itemId: string) => void;
   payBribe: () => void;
   goUnderground: () => void;
+  
+  // Tax actions
+  calculateTaxes: () => number;
+  payTaxes: () => void;
+  evadeTaxes: () => void;
+  triggerAudit: () => void;
+  lobbyForTaxReduction: (category: string) => void;
+  buyShellCompany: () => void;
+  handleAuditResult: () => void;
   
   // General actions
   addEvent: (event: Omit<GameState['events'][0], 'id' | 'timestamp'>) => void;

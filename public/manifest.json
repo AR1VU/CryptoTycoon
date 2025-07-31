@@ -1,11 +1,11 @@
 {
-  "name": "Crypto Tycoon",
-  "short_name": "CryptoTycoon",
-  "description": "A comprehensive cryptocurrency mining and trading tycoon game",
+  "name": "DeFi Empire",
+  "short_name": "DeFiEmpire",
+  "description": "Build your decentralized finance empire in the Web3 metaverse",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f23",
-  "theme_color": "#8b5cf6",
+  "background_color": "#0a0a0f",
+  "theme_color": "#00d4ff",
   "icons": [
     {
       "src": "/icon-192.png",

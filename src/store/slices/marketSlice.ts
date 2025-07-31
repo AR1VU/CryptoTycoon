@@ -35,11 +35,21 @@ export const createMarketSlice: StateCreator<
     const state = get();
     if (state.bitbux >= bitbuxAmount) {
       const dollarAmount = bitbuxAmount * state.marketPrice;
-      const fee = dollarAmount * 0.01; // 1% transaction fee
+      const transactionFee = dollarAmount * 0.01; // 1% transaction fee
+      const capitalGainsTax = dollarAmount * state.tax.capitalGainsRate; // Capital gains tax
+      const totalDeductions = transactionFee + capitalGainsTax;
       
       set((state) => ({
         bitbux: state.bitbux - bitbuxAmount,
-        dollars: state.dollars + dollarAmount - fee,
+        dollars: state.dollars + dollarAmount - totalDeductions,
+        tax: {
+          ...state.tax,
+          monthlyBreakdown: {
+            ...state.tax.monthlyBreakdown,
+            capitalGains: state.tax.monthlyBreakdown.capitalGains + capitalGainsTax
+          },
+          unpaidBalance: state.tax.unpaidBalance + capitalGainsTax
+        },
         transactionHistory: [...state.transactionHistory, {
           type: 'sell',
           amount: bitbuxAmount,

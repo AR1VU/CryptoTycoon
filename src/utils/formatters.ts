@@ -105,6 +105,12 @@ export const formatNumber = (num: number): string => {
 };
 
 export const formatCurrency = (num: number): string => {
+  // For large numbers (1 trillion and above), use our custom formatting
+  if (num >= 1e12) {
+    return `$${formatNumber(num)}`;
+  }
+  
+  // For smaller numbers, use standard currency formatting
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
